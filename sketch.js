@@ -51,22 +51,34 @@ const BACKGROUND_IMAGE_WIDTH = 1672;
 const BACKGROUND_IMAGE_HEIGHT = 941;
 const SCREEN_LIGHT_CENTER = [255, 232, 166];
 const SCREEN_LIGHT_EDGE = [170, 112, 58];
+const MIDGROUND_CAMP_SCALE = 1;
+const MIDGROUND_CAMP_Y_OFFSET_RATIO = 0;
+const MIDGROUND_CAMP_TINT = [168, 176, 164];
+const MIDGROUND_CAMP_OPACITY = 190;
+const MIDGROUND_FLAG_TINT = [176, 170, 156];
+const MIDGROUND_FLAG_OPACITY = 182;
+const MIDGROUND_SHADOW_ALPHA = 44;
+const FOREGROUND_SHADOW_ALPHA = 90;
+const FOREGROUND_RIM_LIGHT = [255, 205, 84];
+const FOREGROUND_RIM_ALPHA = 34;
+const FOREGROUND_CENTER_LIGHT_ALPHA = 16;
+const FOREGROUND_WARM_CORE_ALPHA = 22;
 const MU_FLAG_BOX = { x: 32, y: 17, width: 522, height: 673 };
 const MU_FLAG_POLE_RATIO = 0.22;
 const MU_FLAG_TASSEL_BOX = { x: 1, y: 235, width: 132, height: 501 };
 const SHUAI_FLAG_BOX = { x: 1198, y: 17, width: 290, height: 258 };
 const SHUAI_FLAG_POLE_RATIO = 0.18;
 const MOUNTAIN_SPECS = [
-  { image: "left", xRatio: 0.12, yRatio: 0.25, widthRatio: 0.54, opacity: 150 },
-  { image: "right", xRatio: 0.42, yRatio: 0.18, widthRatio: 0.62, opacity: 160 }
+  { image: "left", xRatio: 0.12, yRatio: 0.25, widthRatio: 0.54, opacity: 98 },
+  { image: "right", xRatio: 0.42, yRatio: 0.18, widthRatio: 0.62, opacity: 108 }
 ];
 const CLOUD_SPECS = [
-  { xRatio: 0.08, yRatio: 0.05, widthRatio: 0.12, speed: 7, drift: 3, phase: 0.4, opacity: 125 },
-  { xRatio: 0.38, yRatio: 0.16, widthRatio: 0.07, speed: 5, drift: 2, phase: 2.1, opacity: 110 },
-  { xRatio: 0.66, yRatio: 0.09, widthRatio: 0.20, speed: 13, drift: 5, phase: 4.3, opacity: 150 },
-  { xRatio: 1.05, yRatio: 0.24, widthRatio: 0.10, speed: 9, drift: 3, phase: 1.3, opacity: 120 },
-  { xRatio: 1.42, yRatio: 0.13, widthRatio: 0.16, speed: 11, drift: 4, phase: 5.4, opacity: 135 },
-  { xRatio: 1.72, yRatio: 0.02, widthRatio: 0.06, speed: 4, drift: 2, phase: 3.2, opacity: 95 }
+  { xRatio: 0.08, yRatio: 0.05, widthRatio: 0.12, speed: 7, drift: 3, phase: 0.4, opacity: 82 },
+  { xRatio: 0.38, yRatio: 0.16, widthRatio: 0.07, speed: 5, drift: 2, phase: 2.1, opacity: 72 },
+  { xRatio: 0.66, yRatio: 0.09, widthRatio: 0.20, speed: 13, drift: 5, phase: 4.3, opacity: 96 },
+  { xRatio: 1.05, yRatio: 0.24, widthRatio: 0.10, speed: 9, drift: 3, phase: 1.3, opacity: 78 },
+  { xRatio: 1.42, yRatio: 0.13, widthRatio: 0.16, speed: 11, drift: 4, phase: 5.4, opacity: 88 },
+  { xRatio: 1.72, yRatio: 0.02, widthRatio: 0.06, speed: 4, drift: 2, phase: 3.2, opacity: 62 }
 ];
 function preload() {
   // Load the handPose model.
@@ -205,7 +217,7 @@ function gotHands(results) {
 //     background(255);
 // }
 
-function getSceneBackgroundPlacement() {
+function getSceneBackgroundBasePlacement() {
   const imageRatio = BACKGROUND_IMAGE_WIDTH / BACKGROUND_IMAGE_HEIGHT;
   const canvasRatio = xMax / yMax;
   let bgWidth;
@@ -228,13 +240,33 @@ function getSceneBackgroundPlacement() {
   return { x: bgX, y: bgY, width: bgWidth, height: bgHeight };
 }
 
+function getSceneBackgroundPlacement() {
+  const base = getSceneBackgroundBasePlacement();
+  const width = base.width * MIDGROUND_CAMP_SCALE;
+  const height = base.height * MIDGROUND_CAMP_SCALE;
+  const x = base.x + (base.width - width) / 2;
+  const y = base.y + (base.height - height) / 2 + yMax * MIDGROUND_CAMP_Y_OFFSET_RATIO;
+
+  return { x, y, width, height };
+}
+
 function drawSceneBackground() {
   if (!sceneBackground) {
     return;
   }
 
   const bg = getSceneBackgroundPlacement();
+
+  push();
+  drawingContext.shadowColor = `rgba(48, 24, 8, ${MIDGROUND_SHADOW_ALPHA / 255})`;
+  drawingContext.shadowBlur = 22 * Math.max(0.8, screenScale);
+  drawingContext.shadowOffsetX = 18 * Math.max(0.8, screenScale);
+  drawingContext.shadowOffsetY = 24 * Math.max(0.8, screenScale);
+  tint(MIDGROUND_CAMP_TINT[0], MIDGROUND_CAMP_TINT[1], MIDGROUND_CAMP_TINT[2], MIDGROUND_CAMP_OPACITY);
   image(sceneBackground, bg.x, bg.y, bg.width, bg.height);
+  pop();
+
+  noTint();
 }
 
 function drawSkyBackground() {
@@ -257,28 +289,83 @@ function drawSkyBackground() {
   }
 }
 
-function drawStageLighting() {
+function drawMidgroundLighting() {
   noStroke();
 
-  for (let i = 30; i >= 0; i--) {
+  for (let i = 24; i >= 0; i--) {
     const progress = i / 36;
-    fill(255, 240, 190, 6.5);
+    fill(196, 202, 190, 2.8);
     ellipse(xMax * 0.55, yMax * 0.48, xMax * 1.05 * progress, yMax * 0.72 * progress);
   }
 
-  for (let i = 0; i < 32; i++) {
+  for (let i = 0; i < 26; i++) {
     const progress = i / 31;
-    fill(36, 20, 10, Math.pow(progress, 2.1) * 1.8);
+    fill(28, 31, 34, Math.pow(progress, 2.1) * 1.45);
     rect(0, 0, xMax, yMax * 0.38 * progress);
     rect(0, yMax - yMax * 0.34 * progress, xMax, yMax * 0.34 * progress);
     rect(0, 0, xMax * 0.34 * progress, yMax);
     rect(xMax - xMax * 0.34 * progress, 0, xMax * 0.34 * progress, yMax);
   }
+}
 
-  for (let i = 0; i < 18; i++) {
-    const progress = i / 17;
-    fill(255, 225, 160, (1 - progress) * 9);
-    ellipse(xMax * 0.82, yMax * 0.08, xMax * 0.18 * progress, yMax * 0.14 * progress);
+function drawForegroundPuppetShadow() {
+  if (!lowerBody) {
+    return;
+  }
+
+  const footY = Math.max(
+    lowerBody.y + lowerBody.height * 0.42,
+    lFoot ? lFoot.y + lFoot.height * 0.32 : 0,
+    rFoot ? rFoot.y + rFoot.height * 0.32 : 0
+  );
+  const shadowX = lowerBody.x + 12 * screenScale;
+  const shadowY = constrain(footY + 10 * screenScale, yMax * 0.46, yMax - 24 * screenScale);
+  const shadowWidth = Math.max(92 * screenScale, lowerBody.width * 1.75);
+  const shadowHeight = Math.max(18 * screenScale, shadowWidth * 0.16);
+
+  push();
+  noStroke();
+  for (let i = 10; i >= 1; i--) {
+    const progress = i / 10;
+    fill(34, 16, 4, FOREGROUND_SHADOW_ALPHA * Math.pow(progress, 1.7) / 10);
+    ellipse(shadowX, shadowY, shadowWidth * progress, shadowHeight * progress);
+  }
+  pop();
+}
+
+function drawForegroundFocus() {
+  if (!head || !upperBody || !lowerBody) {
+    return;
+  }
+
+  const focusX = (head.x + upperBody.x + lowerBody.x) / 3;
+  const focusY = (head.y + upperBody.y + lowerBody.y) / 3;
+  const focusWidth = Math.max(110 * screenScale, upperBody.width * 2.2);
+  const focusHeight = Math.max(170 * screenScale, (head.height + upperBody.height + lowerBody.height) * 0.72);
+
+  noStroke();
+
+  for (let i = 18; i >= 1; i--) {
+    const progress = i / 18;
+    fill(
+      FOREGROUND_RIM_LIGHT[0],
+      FOREGROUND_RIM_LIGHT[1],
+      FOREGROUND_RIM_LIGHT[2],
+      FOREGROUND_RIM_ALPHA * Math.pow(1 - progress, 1.7)
+    );
+    ellipse(focusX, focusY, focusWidth * progress, focusHeight * progress);
+  }
+
+  for (let i = 10; i >= 1; i--) {
+    const progress = i / 10;
+    fill(255, 244, 184, FOREGROUND_CENTER_LIGHT_ALPHA * Math.pow(1 - progress, 1.3));
+    ellipse(focusX - 6 * screenScale, focusY - 18 * screenScale, focusWidth * 0.42 * progress, focusHeight * 0.56 * progress);
+  }
+
+  for (let i = 8; i >= 1; i--) {
+    const progress = i / 8;
+    fill(255, 194, 76, FOREGROUND_WARM_CORE_ALPHA * Math.pow(1 - progress, 1.45));
+    ellipse(upperBody.x, upperBody.y - 8 * screenScale, upperBody.width * 1.45 * progress, upperBody.height * 1.25 * progress);
   }
 }
 
@@ -327,6 +414,8 @@ function drawMuFlag() {
   const poleSourceWidth = Math.round(muFlag.width * MU_FLAG_POLE_RATIO);
   const poleWidth = flagWidth * MU_FLAG_POLE_RATIO;
 
+  push();
+  tint(MIDGROUND_FLAG_TINT[0], MIDGROUND_FLAG_TINT[1], MIDGROUND_FLAG_TINT[2], MIDGROUND_FLAG_OPACITY);
   image(muFlagPole, flagX, flagY, poleWidth, flagHeight, 0, 0, poleSourceWidth, muFlag.height);
   drawMuFlagTassel(flagX, flagY, flagWidth, flagHeight);
 
@@ -359,6 +448,9 @@ function drawMuFlag() {
       muFlag.height
     );
   }
+
+  pop();
+  noTint();
 }
 
 function drawMuFlagTassel(flagX, flagY, flagWidth, flagHeight) {
@@ -393,6 +485,8 @@ function drawShuaiFlag() {
   const poleSourceWidth = Math.round(shuaiFlag.width * SHUAI_FLAG_POLE_RATIO);
   const poleWidth = flagWidth * SHUAI_FLAG_POLE_RATIO;
 
+  push();
+  tint(MIDGROUND_FLAG_TINT[0], MIDGROUND_FLAG_TINT[1], MIDGROUND_FLAG_TINT[2], MIDGROUND_FLAG_OPACITY);
   image(shuaiFlag, flagX, flagY, poleWidth, flagHeight, 0, 0, poleSourceWidth, shuaiFlag.height);
 
   const stripCount = 24;
@@ -424,6 +518,9 @@ function drawShuaiFlag() {
       shuaiFlag.height
     );
   }
+
+  pop();
+  noTint();
 }
 
 function initializeClouds() {
@@ -472,13 +569,13 @@ function updateClouds() {
 
 function update() {
 	drawSkyBackground();
-	drawMountains();
 	drawStoneGround();
+	drawMountains();
 	updateClouds();
+	drawSceneBackground();
 	drawMuFlag();
 	drawShuaiFlag();
-	drawSceneBackground();
-	drawStageLighting();
+	drawMidgroundLighting();
 	head.debug = mouse.pressing();
 	neck.debug = mouse.pressing();
 	upperBody.debug = mouse.pressing();
@@ -494,9 +591,11 @@ function update() {
     rHand.debug = mouse.pressing();
     // middleFinger.moveTowards(mouse);
     // topLeftHand.moveTowards(mouse);
-    showHandPoints();
 	getHandedness();
     movePuppet();
+    drawForegroundPuppetShadow();
+    drawForegroundFocus();
+    showHandPoints();
 }
 
 function showHandPoints() {
